@@ -95,21 +95,26 @@ def render_grid(placeholder):
 
 # --- BFS (Graph Colouring) ---
 def run_bfs(placeholder):
+    start_time = time.time()
     queue = deque([st.session_state.start_pos])
     came_from = {}
     visited = {st.session_state.start_pos}
+    nodes_visited_count = 0
+    path_length = 0
     
     while queue:
         curr = queue.popleft()
         if curr == st.session_state.end_pos:
             path_node = curr
             while path_node in came_from:
+                path_length += 1
                 path_node = came_from[path_node]
                 if path_node != st.session_state.start_pos:
                     st.session_state.grid[path_node[0]][path_node[1]] = 'path'
                 render_grid(placeholder)
                 time.sleep(0.02)
-            return True
+            end_time = time.time()
+            return nodes_visited_count, path_length, end_time - start_time
         
         for n in get_neighbors(*curr):
             if n not in visited:
@@ -121,29 +126,38 @@ def run_bfs(placeholder):
         
         if curr != st.session_state.start_pos:
             st.session_state.grid[curr[0]][curr[1]] = 'closed'
+            nodes_visited_count += 1
         render_grid(placeholder)
         time.sleep(0.01)
+    
+    return nodes_visited_count, 0, time.time() - start_time
 
 # --- DFS (Hamiltonian Backtracking) ---
 def run_dfs(placeholder):
+    start_time = time.time()
     stack = [st.session_state.start_pos]
     came_from = {}
     visited = {st.session_state.start_pos}
+    nodes_visited_count = 0
+    path_length = 0
     
     while stack:
         curr = stack.pop()
         if curr == st.session_state.end_pos:
             path_node = curr
             while path_node in came_from:
+                path_length += 1
                 path_node = came_from[path_node]
                 if path_node != st.session_state.start_pos:
                     st.session_state.grid[path_node[0]][path_node[1]] = 'path'
                 render_grid(placeholder)
                 time.sleep(0.02)
-            return True
+            end_time = time.time()
+            return nodes_visited_count, path_length, end_time - start_time
         
         if curr != st.session_state.start_pos:
             st.session_state.grid[curr[0]][curr[1]] = 'closed'
+            nodes_visited_count += 1
             
         for n in reversed(get_neighbors(*curr)):
             if n not in visited:
@@ -155,6 +169,8 @@ def run_dfs(placeholder):
         
         render_grid(placeholder)
         time.sleep(0.01)
+        
+    return nodes_visited_count, 0, time.time() - start_time
 
 # --- Prim's Maze ---
 def run_prims_maze(placeholder):
@@ -199,7 +215,17 @@ def run_prims_maze(placeholder):
 
 # --- Layout ---
 st.title("Interactive Pathfinder")
+
+metrics_placeholder = st.empty()
 grid_placeholder = st.empty()
+
+def show_metrics(nodes, path, duration):
+    with metrics_placeholder.container():
+        st.markdown("### 📊 Algorithm Analysis Metrics")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Visualization Time", f"{duration:.3f} sec")
+        col2.metric("Space (Nodes Explored)", f"{nodes}")
+        col3.metric("Path Length Found", f"{path}")
 
 # --- Sidebar ---
 st.sidebar.title("DAA Pathfinder")
@@ -208,14 +234,22 @@ algo = st.sidebar.radio("Algorithm", ["Graph Colouring (BFS)", "Hamiltonian (Bac
 
 if st.sidebar.button("Start Visualization"):
     clear_path()
-    if algo == "Graph Colouring (BFS)": run_bfs(grid_placeholder)
-    else: run_dfs(grid_placeholder)
+    metrics_placeholder.empty()
+    if algo == "Graph Colouring (BFS)": 
+        metrics = run_bfs(grid_placeholder)
+    else: 
+        metrics = run_dfs(grid_placeholder)
+        
+    if metrics:
+        show_metrics(metrics[0], metrics[1], metrics[2])
 
 if st.sidebar.button("Generate Prim's Maze"):
     run_prims_maze(grid_placeholder)
+    metrics_placeholder.empty()
 
 if st.sidebar.button("Reset Grid"):
     reset_grid()
+    metrics_placeholder.empty()
 
 # Render standard layout at script completion
 render_grid(grid_placeholder)
