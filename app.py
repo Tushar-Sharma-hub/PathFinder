@@ -198,7 +198,7 @@ def run_prims_maze(placeholder):
     render_grid(placeholder)
 
 # --- Layout ---
-st.title("Interactive Pathfinder — Python Edition")
+st.title("Interactive Pathfinder")
 grid_placeholder = st.empty()
 
 # --- Sidebar ---
